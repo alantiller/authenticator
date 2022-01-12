@@ -4,7 +4,8 @@
     "type": "library",
     "require": {
         "catfan/medoo": "^2.1",
-        "tokenly/token-generator": "^1.0"
+        "tokenly/token-generator": "^1.0",
+        "ramsey/uuid": "^4.2"
     },
     "autoload": {
         "psr-4": {

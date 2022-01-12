@@ -15,10 +15,14 @@ namespace Slations;
 class Authenticator {
     // Set the connection value
     protected static $database;
+    protected static $mailer;
+    private static $mailer_from;
 
     // Construct
-    public function __construct($db) {
+    public function __construct($db, $mailer, $mailer_from) {
 		self::$database = $db;
+        self::$mailer = $mailer;
+        self::$mailer_from = $mailer_from;
 	}
 
 
@@ -193,13 +197,22 @@ class Authenticator {
      */
 
     // Send confirmation email
-    private static function user_send_confirmation($email, $user_id) {
-        global $dotenv;
-        
-        $confirm_token = Utilities::uuid_v4();
-        $sql_timestamp = date("Y-m-d H:i:s");
+    private static function user_send_confirmation($user_id) {
+        $users = self::$database->select('users', '*', ['id' => $user_id]);
 
-        self::$connection->query("INSERT INTO `slations_tokens` (`id`, `user_id`, `service`, `timestamp`) VALUES (?, ?, ?, ?)", array($confirm_token, $user_id, 'account_activation', $sql_timestamp));
+        if (count($users) != 1) { 
+            throw new Exception('The email address or password was incorrect');
+        }
+        $user = $users[0];
+
+        $confirm_token = Ramsey\Uuid\Uuid::uuid4()->toString();
+        
+        self::$database->insert("tokens", [
+            "id" => $confirm_token,
+            "user" => $user['id'],
+            "service" => "account_activation",
+            "timestamp" => date("Y-m-d H:i:s")
+        ]);
 
         $body = file_get_contents('templates/email.confirm_email.html');
 
@@ -207,7 +220,8 @@ class Authenticator {
         $body = str_replace('{{project_root}}', application_root, $body);
         $body = str_replace('{{token}}', $confirm_token, $body);
 
-        mail($email, application_name . " - Confim your email address", $body, "MIME-Version: 1.0" . "\r\n" . "Content-type:text/html;charset=UTF-8" . "\r\n" . "From: ".application_name."<".$dotenv->read('EMAIL_FROM').">");
+        $email = (new Email())->from(self::$mailer_from)->to($user['email'])->subject('Confim your email address')->html($body);
+        self::$mailer->send($email);
     }
 
     // Confirm the user email
