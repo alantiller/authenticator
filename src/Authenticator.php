@@ -28,91 +28,134 @@ class Authenticator {
 
     // Authentication a user
     public static function user_auth($email, $password) {
-        $user = self::$database->select('users', '*', ['email' => $email])[0];
+        try {
+            $users = self::$database->select('users', '*', ['email' => $email]);
 
-        $salted_hash = hash('sha256', $password . $user['salt']);
-        
-        if ($user['password'] != $salted_hash) {
-            return array("status" => 400, "data" => array("error" => array("code" => "INVALID_CREDENTIALS", "message" => "Your email/password is incorrect.")));
+            if (count($users) != 1) { 
+                throw new Exception('The email address or password was incorrect');
+            }
+    
+            $user = $users[0];
+            $salted_hash = hash('sha256', $password . $user['salt']);
+            
+            if ($user['password'] != $salted_hash) {
+                throw new Exception('The email address or password was incorrect');
+            }
+    
+            if ($user['approved'] != '1') {
+                throw new Exception('The account has not been activated');
+            }
+    
+            if ($user['locked'] != '0') {
+                throw new Exception('The account has been locked');
+            }
+    
+            if ($user['verified'] != '1') {
+                self::user_send_confirmation($user['email'], $user['id']);
+                throw new Exception('The accounts email address has not been verified, another email was sent');
+            }
+    
+            $auth_token = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(30);
+            self::$database->insert("tokens", [
+                "id" => $auth_token,
+                "user" => $user['id'],
+                "service" => "authenticator",
+                "timestamp" => date("Y-m-d H:i:s")
+            ]);
+    
+            return array("result" => "success", "token" => $auth_token, "user" => $user['id']);
+        } catch(Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("result" => "failed", "message" => $error->getMessage());
         }
-
-        if ($user['approved'] != '1') {
-            return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_NOT_ACTIVE", "message" => "Your account has not been activated yet.")));
-        }
-
-        if ($user['locked'] != '0') {
-            return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_LOCKED", "message" => "Your account has been locked by an administrator.")));
-        }
-
-        if ($user['verified'] != '1') {
-            self::user_send_confirmation($user['email'], $user['id']);
-            return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_NOT_VERIFIED", "message" => "Your email has not been verified yet. Another email has been sent.")));
-        }
-
-        $auth_token = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(30);
-
-        self::$database->insert("tokens", [
-            "id" => $auth_token,
-            "user" => $user['id'],
-            "service" => "slations_users",
-            "timestamp" => date("Y-m-d H:i:s")
-        ]);
-
-        return array("status" => 200, "data" => array("token" => $auth_token, "user" => $user['id']));
     }
 
     // Log out a user
     public static function user_logout($token = null) {
-        // If the token is not set this is a call from the app
-        if ($token == null) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_MISSING", "message" => "The token was not included in the request.")));
+        try {
+            // If the token is not set this is a call from the app
+            if ($token == null) {
+                throw new Exception("The token was not included in the request");
+            }
+
+            // Get all tokens matching the prodived in the user service
+            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator'])[0];
+            
+            // Check if the token exists
+            if (count($tokens) != 1) {
+                throw new Exception("The token provided was not found in the database");
+            }
+            $token = $tokens[0];
+
+            // Execute query to remove token from database
+            self::$database->delete('tokens', [
+                'AND' => [
+                    'id' => $token['id'],
+                    'service' => 'authenticator'
+                ]
+            ]);
+            return array("status" => "success");
+        } catch (Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("status" => "failed", "message" => $error->getMessage());
         }
-
-        // Get all tokens matching the prodived in the user service
-        $tokens = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ? AND `service` = 'slations_users'", self::get_value('token'));
-
-        // Check if the token exists
-        if ($tokens->numRows() != 1) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_INVALID", "message" => "The token provided was not found in the database.")));
-        }
-
-        // Execute query to remove token from database
-        self::$connection->query("DELETE FROM `slations_tokens` WHERE `id` = ? AND `service` = 'slations_users'", $token);
-        return array("status" => 204);
     }
 
     // Check the user to check if there logged in
     public static function user_check($token = null) {
-        if ($token == null) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_MISSING", "message" => "The token was not included in the request.")));
+        try {
+            if ($token == null) {
+                throw new Exception("The token was not included in the request");
+            }
+    
+            // Get all tokens matching the prodived in the user service
+            $tokens = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ? AND `service` = 'slations_users'", $token);
+    
+            // Check if the token exists
+            if ($tokens->numRows() != 1) {
+                throw new Exception("The token provided was not found in the database");
+            }
+            $token = $tokens[0];
+    
+            $chktime = strtotime($token['timestamp']);
+            $timenow = time();
+            $time_diff = $timenow - $chktime;
+    
+            if ($time_diff > 1800) {
+                throw new Exception("The user session has timed out");
+            }
+    
+            self::$database->update("account", ["timestamp" => date("Y-m-d H:i:s")], ["id" => $token['id']]);
+       
+            return array("status" => "success");
+        } catch (Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("status" => "failed", "message" => $error->getMessage());
         }
-
-        // Get all tokens matching the prodived in the user service
-        $tokens = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ? AND `service` = 'slations_users'", $token);
-
-        // Check if the token exists
-        if ($tokens->numRows() != 1) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_INVALID", "message" => "The token provided was not found in the database.")));
-        }
-
-        $row_token = $tokens->fetchArray();
-        $chktime = strtotime($row_token['timestamp']);
-        $timenow = time();
-        $time_diff = $timenow - $chktime;
-
-        if ($time_diff > 1800) {
-            return array("status" => 400, "data" => array("error" => array("code" => "SESSION_TIMEOUT", "message" => "The user session has timed out.")));
-        }
-
-        $sql_timestamp = date("Y-m-d H:i:s");
-        self::$connection->query("UPDATE `slations_tokens` SET `timestamp` = ? WHERE `id` = ? AND `service` = 'slations_users'", array($sql_timestamp, $token));
-        return array("status" => 204);
     }
 
 
     /*
      * User Functions
      */
+
+    // Get a user by their ID
+    public static function user_get($user_id) {
+        return self::$connection->query("SELECT * FROM `slations_users` WHERE `id` = ?", $user_id)->fetchArray();
+    }
+
+    // Get the current user
+    public static function user_get_me($token = null) {
+        if ($token == null) {
+            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_MISSING", "message" => "The token was not included in the request.")));
+        }
+
+        // Gets the user id from the token
+        $user = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ?", $token)->fetchArray()['user'];
+        
+        // Return the user result
+        return self::user_get($user);
+    }
 
     // Create user
     public static function user_create($first_name, $last_name, $email, $password) {
@@ -143,7 +186,12 @@ class Authenticator {
 
         return '<div class="alert success">Success! Once you confirm your email address you\'ll be able to login to your account.</div>';
     }
-    
+
+
+    /*
+     * Confirm Email Functions
+     */
+
     // Send confirmation email
     private static function user_send_confirmation($email, $user_id) {
         global $dotenv;
@@ -183,32 +231,5 @@ class Authenticator {
 
         self::$connection->query("UPDATE `slations_users` SET `verified` = '1' WHERE id = ?", $row_token['user_id']);
         return true;
-    }
-
-    // Get a user by their ID
-    public static function user_get($user_id) {
-        return self::$connection->query("SELECT * FROM `slations_users` WHERE `id` = ?", $user_id)->fetchArray();
-    }
-
-    // Get the current user
-    public static function user_get_me($token = null) {
-        if ($token == null) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_MISSING", "message" => "The token was not included in the request.")));
-        }
-
-        // Gets the user id from the token
-        $user = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ?", $token)->fetchArray()['user'];
-        
-        // Return the user result
-        return self::user_get($user);
-    }
-
-
-    /*
-     * Server Functions
-     */
-
-    public static function server_health() {
-        
     }
 }
