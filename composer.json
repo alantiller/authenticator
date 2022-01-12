@@ -1,0 +1,19 @@
+{
+    "name": "slations/authenticator",
+    "description": "A simple and lightweight authentication class using medoo for database connectivity",
+    "type": "library",
+    "require": {
+        "catfan/medoo": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Slations\\Authenticator\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Alan Tiller",
+            "email": "alan@slations.co.uk"
+        }
+    ]
+}
