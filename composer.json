@@ -3,7 +3,8 @@
     "description": "A simple and lightweight authentication class using medoo for database connectivity",
     "type": "library",
     "require": {
-        "catfan/medoo": "^2.1"
+        "catfan/medoo": "^2.1",
+        "tokenly/token-generator": "^1.0"
     },
     "autoload": {
         "psr-4": {

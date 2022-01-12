@@ -14,11 +14,11 @@ namespace Slations;
 
 class Authenticator {
     // Set the connection value
-    protected static $connection;
+    protected static $database;
 
     // Construct
-    public function __construct($connection) {
-		self::$connection = $connection;
+    public function __construct($db) {
+		self::$database = $db;
 	}
 
 
@@ -28,36 +28,37 @@ class Authenticator {
 
     // Authentication a user
     public static function user_auth($email, $password) {
-        // Filter strings for SQL Injection
-        $email = Utilities::string_filter($email);
-        $password = Utilities::string_filter($password);
-        
-        $row_user = self::$connection->query('SELECT * FROM `slations_users` WHERE email = ?', $email)->fetchArray();
+        $user = self::$database->select('users', '*', ['email' => $email])[0];
 
-        $salted_hash = hash('sha256', $password . $row_user['salt']);
-        if ($row_user['password'] != $salted_hash) {
+        $salted_hash = hash('sha256', $password . $user['salt']);
+        
+        if ($user['password'] != $salted_hash) {
             return array("status" => 400, "data" => array("error" => array("code" => "INVALID_CREDENTIALS", "message" => "Your email/password is incorrect.")));
         }
 
-        if ($row_user['approved'] != '1') {
+        if ($user['approved'] != '1') {
             return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_NOT_ACTIVE", "message" => "Your account has not been activated yet.")));
         }
 
-        if ($row_user['locked'] != '0') {
+        if ($user['locked'] != '0') {
             return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_LOCKED", "message" => "Your account has been locked by an administrator.")));
         }
 
-        if ($row_user['verified'] != '1') {
-            self::user_send_confirmation($row_user['email'], $row_user['id']);
+        if ($user['verified'] != '1') {
+            self::user_send_confirmation($user['email'], $user['id']);
             return array("status" => 400, "data" => array("error" => array("code" => "ACCOUNT_NOT_VERIFIED", "message" => "Your email has not been verified yet. Another email has been sent.")));
         }
 
-        $user = $row_user['id'];
-        $auth_token = Utilities::generate_random_string(30);
-        $sql_timestamp = date("Y-m-d H:i:s"); 
+        $auth_token = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(30);
 
-        self::$connection->query("INSERT INTO `slations_tokens` (`id`, `user`, `service`, `timestamp`) VALUES (?, ?, ?, ?)", array($auth_token, $user, 'slations_users', $sql_timestamp));
-        return array("status" => 200, "data" => array("token" => $auth_token, "user" => $user, "expiry" => $sql_timestamp));
+        self::$database->insert("tokens", [
+            "id" => $auth_token,
+            "user" => $user['id'],
+            "service" => "slations_users",
+            "timestamp" => date("Y-m-d H:i:s")
+        ]);
+
+        return array("status" => 200, "data" => array("token" => $auth_token, "user" => $user['id']));
     }
 
     // Log out a user

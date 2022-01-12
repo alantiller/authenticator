@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a125ee89cd9a0d07f15e9afb0727aa62",
+    "content-hash": "fc6d615944615dc538b33b70fe187e66",
     "packages": [
         {
             "name": "catfan/medoo",
@@ -81,6 +81,50 @@
                 }
             ],
             "time": "2021-12-13T07:19:58+00:00"
+        },
+        {
+            "name": "tokenly/token-generator",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/tokenly/token-generator.git",
+                "reference": "a0fff2db10325416ea2bbe1a11b729e97cc6f86c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/tokenly/token-generator/zipball/a0fff2db10325416ea2bbe1a11b729e97cc6f86c",
+                "reference": "a0fff2db10325416ea2bbe1a11b729e97cc6f86c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Tokenly\\TokenGenerator\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Devon Weller",
+                    "email": "devon@tokenly.com",
+                    "homepage": "http://tokenly.com"
+                }
+            ],
+            "description": "A library to generate secure random strings",
+            "support": {
+                "issues": "https://github.com/tokenly/token-generator/issues",
+                "source": "https://github.com/tokenly/token-generator/tree/v1.0.0"
+            },
+            "time": "2017-11-01T12:59:07+00:00"
         }
     ],
     "packages-dev": [],
