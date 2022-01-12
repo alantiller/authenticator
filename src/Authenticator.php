@@ -15,20 +15,19 @@ namespace Slations;
 class Authenticator {
     // Set the connection value
     protected static $database;
+    protected static $env_key;
     protected static $mailer;
+    private static $confirm_email_url;
     private static $mailer_from;
 
     // Construct
-    public function __construct($db, $mailer, $mailer_from) {
+    public function __construct($db, $mailer_from, $confirm_email_url, $env_key = '', $mailer = null) {
 		self::$database = $db;
-        self::$mailer = $mailer;
+        self::$env_key = $env_key;
+        self::$mailer = $confirm_email_url;
+        self::$confirm_email_url = $mailer;
         self::$mailer_from = $mailer_from;
 	}
-
-
-    /*
-     * Auth Functions
-     */
 
     // Authentication a user
     public static function user_auth($email, $password) {
@@ -40,7 +39,7 @@ class Authenticator {
             }
     
             $user = $users[0];
-            $salted_hash = hash('sha256', $password . $user['salt']);
+            $salted_hash = hash('sha256', $env_key . $password . $user['salt']);
             
             if ($user['password'] != $salted_hash) {
                 throw new Exception('The email address or password was incorrect');
@@ -55,7 +54,7 @@ class Authenticator {
             }
     
             if ($user['verified'] != '1') {
-                self::user_send_confirmation($user['email'], $user['id']);
+                self::user_send_confirmation($user['id']);
                 throw new Exception('The accounts email address has not been verified, another email was sent');
             }
     
@@ -83,7 +82,7 @@ class Authenticator {
             }
 
             // Get all tokens matching the prodived in the user service
-            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator'])[0];
+            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator']);
             
             // Check if the token exists
             if (count($tokens) != 1) {
@@ -113,7 +112,7 @@ class Authenticator {
             }
     
             // Get all tokens matching the prodived in the user service
-            $tokens = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ? AND `service` = 'slations_users'", $token);
+            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator'])[0];
     
             // Check if the token exists
             if ($tokens->numRows() != 1) {
@@ -138,66 +137,84 @@ class Authenticator {
         }
     }
 
-
-    /*
-     * User Functions
-     */
-
     // Get a user by their ID
-    public static function user_get($user_id) {
-        return self::$connection->query("SELECT * FROM `slations_users` WHERE `id` = ?", $user_id)->fetchArray();
+    public static function user_get($user_id) {    
+        try {
+            $users = self::$database->select('users', '*', ['id' => $user_id]);
+        
+            if (count($users) != 1) { 
+                throw new Exception('The user does not exist');
+            }
+
+            return $users[0];
+        } catch (Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("status" => "failed", "message" => $error->getMessage());
+        }
     }
 
     // Get the current user
     public static function user_get_me($token = null) {
-        if ($token == null) {
-            return array("status" => 400, "data" => array("error" => array("code" => "TOKEN_MISSING", "message" => "The token was not included in the request.")));
-        }
+        try {
+            if ($token == null) {
+                throw new Exception("The token was not included in the request");
+            }
 
-        // Gets the user id from the token
-        $user = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ?", $token)->fetchArray()['user'];
+            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator']);
         
-        // Return the user result
-        return self::user_get($user);
+            // Check if the token exists
+            if (count($tokens) != 1) { 
+                throw new Exception('The token sent does not exist');
+            }
+            $token = $tokens[0];
+
+            // Return the user result
+            return self::user_get($token['id']);
+        } catch (Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("status" => "failed", "message" => $error->getMessage());
+        }
     }
 
     // Create user
-    public static function user_create($first_name, $last_name, $email, $password) {
-        // Filter strings for SQL Injection
-        $first_name = Utilities::string_filter($first_name);
-        $last_name = Utilities::string_filter($last_name);
-        $email = Utilities::string_filter($email);
-        $password = Utilities::string_filter($password);
+    public static function user_create($name, $email, $password) {
+        try {
+            // Check if the email address already exists
+            $users = self::$database->select('users', '*', ['email' => $email]);
 
-        // Get any users with the same email address
-        $users = self::$connection->query("SELECT * FROM `slations_users` WHERE email = ?", $email);
+            if (count($users) > 0) { 
+                throw new Exception('The email address already exists');
+            }
 
-        // Check if there are any users with that email and respond with failure 
-        if ($users->numRows() > 0) {
-            return '<div class="alert error">Sorry! This email has already been registered!</div>';
+            // Generate the users account id and salt
+            $id = Ramsey\Uuid\Uuid::uuid4()->toString();
+            $password_salt = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(20);
+
+            // Hash the users password
+            $salted_hash = hash('sha256', $env_key . $password . $password_salt);
+
+            // Create the account
+            self::$database->insert("users", [
+                "id" => $id,
+                "name" => $name,
+                "email" => $email,
+                "password" => $salted_hash,
+                "salt" => $password_salt,
+                "timestamp" => date("Y-m-d H:i:s")
+            ]);
+
+            // Generate UUID and send an email to confirm an account
+            self::user_send_confirmation($id);
+
+            return array("status" => "success");
+        } catch (Exception $error) {
+            error_log($error->getMessage(), 0);
+            return array("status" => "failed", "message" => $error->getMessage());
         }
-        
-        $id = Utilities::uuid_v4();
-        $password_salt = Utilities::generate_random_string(20);
-
-        $salted_hash = hash('sha256', $password . $password_salt);
-
-        $sql_timestamp = date("Y-m-d H:i:s");
-        self::$connection->query("INSERT INTO `slations_users` (id, first_name, last_name, email, password, salt, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)", array($id, $first_name, $last_name, $email, $salted_hash, $password_salt, $sql_timestamp));
-
-        // Generate UUID and send an email to confirm an account
-        self::user_send_confirmation($email, $id);
-
-        return '<div class="alert success">Success! Once you confirm your email address you\'ll be able to login to your account.</div>';
     }
 
-
-    /*
-     * Confirm Email Functions
-     */
-
     // Send confirmation email
-    private static function user_send_confirmation($user_id) {
+    private static function user_send_confirmation($user_id, $url) {
         $users = self::$database->select('users', '*', ['id' => $user_id]);
 
         if (count($users) != 1) { 
@@ -214,14 +231,18 @@ class Authenticator {
             "timestamp" => date("Y-m-d H:i:s")
         ]);
 
-        $body = file_get_contents('templates/email.confirm_email.html');
+        $url_token = $url . '?token=' . $confirm_token;
+        $body = self::template_confirm_email($url_token);
 
-        $body = str_replace('{{project_name}}', application_name, $body);
-        $body = str_replace('{{project_root}}', application_root, $body);
-        $body = str_replace('{{token}}', $confirm_token, $body);
+        // decide to send with php mail or mailer class
+        if ($mailer != null) {
+            $email = (new Email())->from(self::$mailer_from)->to($user['email'])->subject('Confim your email address')->html($body);
+            self::$mailer->send($email);
+        } else {
+            mail($user['email'], "Confim your email address", $body, "MIME-Version: 1.0" . "\r\n" . "Content-type:text/html;charset=UTF-8" . "\r\n" . "From: " . self::$mailer_from);
+        }
 
-        $email = (new Email())->from(self::$mailer_from)->to($user['email'])->subject('Confim your email address')->html($body);
-        self::$mailer->send($email);
+        return true;
     }
 
     // Confirm the user email
@@ -245,5 +266,18 @@ class Authenticator {
 
         self::$connection->query("UPDATE `slations_users` SET `verified` = '1' WHERE id = ?", $row_token['user_id']);
         return true;
+    }
+
+
+    // Template - Confirm Email
+    private static function template_confirm_email($token) {
+        $body;
+
+        $body .= '<p>Hi there,</p>';
+        $body .= '<p>Please click on the libk below to confirm your email address.</p>';
+        $body .= '<a href="' . $token . '">Confirm Email Address</a>';
+        $body .= '<p>Thanks for registering.</p>';
+
+        return $body;
     }
 }
