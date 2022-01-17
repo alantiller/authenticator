@@ -9,8 +9,11 @@
     },
     "autoload": {
         "psr-4": {
-            "Slations\\Authenticator\\": "src/"
-        }
+            "Slations\\": "src/"
+        },
+        "files": [
+            "src/Authenticator.php"
+        ]
     },
     "authors": [
         {
