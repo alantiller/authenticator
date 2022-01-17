@@ -12,6 +12,8 @@
 
 namespace Slations;
 
+use \Exception as Exception;
+
 class Authenticator {
     // Set the connection value
     protected static $database;
