@@ -235,13 +235,8 @@ class Authenticator {
         $body = self::template_confirm_email($url_token);
 
         // decide to send with php mail or mailer class
-        if ($mailer != null) {
-            $email = (new Email())->from(self::$mailer_from)->to($user['email'])->subject('Confim your email address')->html($body);
-            self::$mailer->send($email);
-        } else {
-            mail($user['email'], "Confim your email address", $body, "MIME-Version: 1.0" . "\r\n" . "Content-type:text/html;charset=UTF-8" . "\r\n" . "From: " . self::$mailer_from);
-        }
-
+        mail($user['email'], "Confim your email address", $body, "MIME-Version: 1.0" . "\r\n" . "Content-type:text/html;charset=UTF-8" . "\r\n" . "From: " . self::$mailer_from);
+    
         return true;
     }
 
