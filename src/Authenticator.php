@@ -189,7 +189,7 @@ class Authenticator {
             }
 
             // Generate the users account id and salt
-            $id = Ramsey\Uuid\Uuid::uuid4()->toString();
+            $id = \Ramsey\Uuid\Uuid::uuid4()->toString();
             $password_salt = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(20);
 
             // Hash the users password
@@ -224,7 +224,7 @@ class Authenticator {
         }
         $user = $users[0];
 
-        $confirm_token = Ramsey\Uuid\Uuid::uuid4()->toString();
+        $confirm_token = \Ramsey\Uuid\Uuid::uuid4()->toString();
         
         self::$database->insert("tokens", [
             "id" => $confirm_token,
