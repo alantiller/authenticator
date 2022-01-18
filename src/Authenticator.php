@@ -114,10 +114,10 @@ class Authenticator {
             }
     
             // Get all tokens matching the prodived in the user service
-            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator'])[0];
+            $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'authenticator']);
     
             // Check if the token exists
-            if ($tokens->numRows() != 1) {
+            if (count($tokens) != 1) {
                 throw new Exception("The token provided was not found in the database");
             }
             $token = $tokens[0];
