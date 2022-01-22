@@ -171,7 +171,7 @@ class Authenticator {
             $token = $tokens[0];
 
             // Return the user result
-            return self::user_get($token['id']);
+            return self::user_get($token['user']);
         } catch (Exception $error) {
             error_log($error->getMessage(), 0);
             return array("status" => "failed", "message" => $error->getMessage());
