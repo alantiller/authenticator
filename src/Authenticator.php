@@ -220,7 +220,7 @@ class Authenticator {
         $users = self::$database->select('users', '*', ['id' => $user_id]);
 
         if (count($users) != 1) { 
-            throw new Exception('The email address or password was incorrect');
+            throw new Exception('The user provided does not exist');
         }
         $user = $users[0];
 
@@ -261,7 +261,7 @@ class Authenticator {
             throw new Exception('The token has expired please try and login to get another verification request sent');
         }
 
-        $database->update("users", ['verified' => '1'], ['id' => $token['user']]);
+        self::$database->update("users", ['verified' => '1'], ['id' => $token['user']]);
         return true;
     }
 
