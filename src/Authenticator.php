@@ -216,7 +216,7 @@ class Authenticator {
     }
 
     // Send confirmation email
-    private static function user_send_confirmation($user_id, $url) {
+    private static function user_send_confirmation($user_id) {
         $users = self::$database->select('users', '*', ['id' => $user_id]);
 
         if (count($users) != 1) { 
@@ -233,7 +233,7 @@ class Authenticator {
             "timestamp" => date("Y-m-d H:i:s")
         ]);
 
-        $url_token = $url . '?token=' . $confirm_token;
+        $url_token = self::$confirm_email_url . '?token=' . $confirm_token;
         $body = self::template_confirm_email($url_token);
 
         // decide to send with php mail or mailer class
@@ -244,24 +244,24 @@ class Authenticator {
 
     // Confirm the user email
     public static function user_confirm_email($token) {
-        $tokens = self::$connection->query("SELECT * FROM `slations_tokens` WHERE `id` = ? AND `service` = 'account_activation'", Utilities::string_filter($token));
+        $tokens = self::$database->select('tokens', '*', ['id' => $token, 'service' => 'account_activation']);
 
-        if ($tokens->numRows() != 1) {
-            return false;
+        if (count($tokens) != 1) { 
+            throw new Exception('The token provided was not found in the database');
         }
-        
-        $row_token = $tokens->fetchArray();
-        $chktime = strtotime($row_token['timestamp']);
+        $token = $tokens[0];
+
+        $chktime = strtotime($token['timestamp']);
         $timenow = time();
         $time_diff = $timenow - $chktime;
 
-        self::$connection->query("DELETE FROM `slations_tokens` WHERE `id` = ?", Utilities::string_filter($token));
+        self::$database->delete("tokens", ['id' => $token]);
 
         if ($time_diff > 2628000) {
-            return false;
+            throw new Exception('The token has expired please try and login to get another verification request sent');
         }
 
-        self::$connection->query("UPDATE `slations_users` SET `verified` = '1' WHERE id = ?", $row_token['user_id']);
+        $database->update("users", ['verified' => '1'], ['id' => $token['user']]);
         return true;
     }
 
