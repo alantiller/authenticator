@@ -26,8 +26,8 @@ class Authenticator {
     public function __construct($db, $mailer_from, $confirm_email_url, $env_key = '', $mailer = null) {
 		self::$database = $db;
         self::$env_key = $env_key;
-        self::$mailer = $confirm_email_url;
-        self::$confirm_email_url = $mailer;
+        self::$mailer = $mailer;
+        self::$confirm_email_url = $confirm_email_url;
         self::$mailer_from = $mailer_from;
 	}
 
