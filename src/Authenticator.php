@@ -208,7 +208,7 @@ class Authenticator {
             // Generate UUID and send an email to confirm an account
             self::user_send_confirmation($id);
 
-            return array("status" => "success");
+            return array("status" => "success", "id" => $id);
         } catch (Exception $error) {
             error_log($error->getMessage(), 0);
             return array("status" => "failed", "message" => $error->getMessage());
