@@ -12,7 +12,10 @@
             "AlanTiller\\": "src/"
         },
         "files": [
-            "src/Authenticator.php"
+            "src/Auth.php",
+            "src/Permissions.php",
+            "src/Tokens.php",
+            "src/Users.php"
         ]
     },
     "authors": [
