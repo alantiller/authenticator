@@ -1,6 +1,6 @@
 {
-    "name": "slations/authenticator",
-    "description": "A simple and lightweight authentication class using medoo for database connectivity",
+    "name": "alantiller/authenticator",
+    "description": "A simple, lightweight and secure authentication class.",
     "type": "library",
     "require": {
         "catfan/medoo": "^2.1",
@@ -9,7 +9,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Slations\\": "src/"
+            "AlanTiller\\": "src/"
         },
         "files": [
             "src/Authenticator.php"

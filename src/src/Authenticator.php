@@ -10,25 +10,17 @@
  *
  */
 
-namespace Slations;
+namespace AlanTiller\Authenticator;
 
 use \Exception as Exception;
 
 class Authenticator {
     // Set the connection value
-    protected static $database;
-    protected static $env_key;
-    protected static $mailer;
-    private static $confirm_email_url;
-    private static $mailer_from;
+    protected static $pdo;
 
     // Construct
-    public function __construct($db, $mailer_from, $confirm_email_url, $env_key = '', $mailer = null) {
-		self::$database = $db;
-        self::$env_key = $env_key;
-        self::$mailer = $mailer;
-        self::$confirm_email_url = $confirm_email_url;
-        self::$mailer_from = $mailer_from;
+    public function __construct($pdo) {
+		self::$pdo = $pdo;
 	}
 
     // Authentication a user
