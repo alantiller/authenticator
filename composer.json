@@ -2,14 +2,16 @@
     "name": "alantiller/authenticator",
     "description": "A simple, lightweight and secure authentication class.",
     "type": "library",
-    "require": {
-        "catfan/medoo": "^2.1",
-        "tokenly/token-generator": "^1.0",
-        "ramsey/uuid": "^4.2"
-    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alan Tiller",
+            "email": "alan@slations.co.uk"
+        }
+    ],
     "autoload": {
         "psr-4": {
-            "AlanTiller\\": "src/"
+            "AlanTiller\\Authenticator\\": "src/"
         },
         "files": [
             "src/Auth.php",
@@ -18,10 +20,10 @@
             "src/Users.php"
         ]
     },
-    "authors": [
-        {
-            "name": "Alan Tiller",
-            "email": "alan@slations.co.uk"
-        }
-    ]
+    "minimum-stability": "stable",
+    "require": {
+        "catfan/medoo": "^2.1",
+        "tokenly/token-generator": "^1.0",
+        "ramsey/uuid": "^4.2"
+    }
 }
