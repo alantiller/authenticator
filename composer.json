@@ -6,24 +6,18 @@
     "authors": [
         {
             "name": "Alan Tiller",
-            "email": "alan@slations.co.uk"
+            "email": "alan.tiller@gmx.co.uk"
         }
     ],
     "autoload": {
         "psr-4": {
-            "AlanTiller\\Authenticator\\": "src/"
+            "AlanTiller\\": "src/"
         },
         "files": [
-            "src/Auth.php",
-            "src/Permissions.php",
-            "src/Tokens.php",
-            "src/Users.php"
+            "src/Authenticator.php",
+            "src/DatabaseManager.php",
+            "src/UserManager.php"
         ]
     },
-    "minimum-stability": "stable",
-    "require": {
-        "catfan/medoo": "^2.1",
-        "tokenly/token-generator": "^1.0",
-        "ramsey/uuid": "^4.2"
-    }
+    "minimum-stability": "stable"
 }
