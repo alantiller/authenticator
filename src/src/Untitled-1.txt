@@ -1,3 +1,0 @@
-self::createRandomString(16) -> TokenGenerator::generateToken(16)
-
-createUserInternal -> createUser
