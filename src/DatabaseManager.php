@@ -34,6 +34,32 @@ abstract class DatabaseManager {
 		$this->db = $databaseConnection;
 	}
 
+	
+	/**
+     * Checks the database tables exist
+     *
+     * @param string $table
+	 * @param string $fields
+	 * @param string $where
+     * @return array
+     */
+	protected function checktables()
+	{
+		$query = $this->db->prepare("DESCRIBE `users`");
+		$query->execute();
+		$row = $query->fetch();
+		if (!$row) {
+			throw new Exception("Users table does not exist, please create.", 404);
+		}
+
+		$query = $this->db->prepare("DESCRIBE `tokens`");
+		$query->execute();
+		$row = $query->fetch();
+		if (!$row) {
+			throw new Exception("Tokens table does not exist, please create.", 404);
+		}
+	}
+
 
 	/**
      * Runs a select query

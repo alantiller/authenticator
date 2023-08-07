@@ -16,6 +16,8 @@ final class Authenticator extends DatabaseManager {
 	 */
     public function __construct($databaseConnection) {
 		parent::__construct($databaseConnection);
+
+        parent::checktables();
 	}
 
 
