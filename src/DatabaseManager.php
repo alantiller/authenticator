@@ -43,47 +43,18 @@ abstract class DatabaseManager {
 	 * @param string $where
      * @return array
      */
-	protected function select($table, $fields, $where)
+	protected function select($table, $fields, $where = null)
 	{
 		// Execute the SQL query
-		if (!$where)
+		if ($where)
 		{
-			$request = $this->databaseConnection->prepare("SELECT ? FROM ? WHERE ?");
+			$request = $this->db->prepare("SELECT ? FROM ? WHERE ?");
 
 			$request->execute($table, $fields, $where);
 		}
 		else
 		{
-			$request = $this->databaseConnection->prepare("SELECT ? FROM ?");
-
-			$request->execute($table, $fields);
-		}
-
-		// return the results
-		return $request->setFetchMode(PDO::FETCH_ASSOC);
-	}
-
-
-	/**
-     * Runs a select query
-     *
-     * @param string $table
-	 * @param string $fields
-	 * @param string $where
-     * @return array
-     */
-	protected function select($table, $fields, $where)
-	{
-		// Execute the SQL query
-		if (!$where)
-		{
-			$request = $this->databaseConnection->prepare("SELECT ? FROM ? WHERE ?");
-
-			$request->execute($table, $fields, $where);
-		}
-		else
-		{
-			$request = $this->databaseConnection->prepare("SELECT ? FROM ?");
+			$request = $this->db->prepare("SELECT ? FROM ?");
 
 			$request->execute($table, $fields);
 		}

@@ -47,7 +47,7 @@ final class UserManager extends DatabaseManager {
                 throw new Exception("The token was not included in the request");
             }
 
-            $tokens = self::$databaseConnection->select('tokens', '*', ['id' => $token, 'service' => 'authenticator']);
+            $tokens = $this->select('tokens', '*', ['id' => $token, 'service' => 'authenticator']);
         
             // Check if the token exists
             if (count($tokens) != 1) { 
@@ -67,31 +67,22 @@ final class UserManager extends DatabaseManager {
     public function create($name, $email, $password) {
         try {
             // Check if the email address already exists
-            $users = self::$database->select('users', '*', ['email' => $email]);
+            $users = $this->select('users', '*', ['email' => $email]);
 
             if (count($users) > 0) { 
                 throw new Exception('The email address already exists');
             }
 
-            // Generate the users account id and salt
-            $id = \Ramsey\Uuid\Uuid::uuid4()->toString();
-            $password_salt = (new \Tokenly\TokenGenerator\TokenGenerator())->generateToken(20);
-
             // Hash the users password
             $salted_hash = hash('sha256', $env_key . $password . $password_salt);
 
             // Create the account
-            self::$database->insert("users", [
-                "id" => $id,
+            $this->insert("users", [
                 "name" => $name,
                 "email" => $email,
                 "password" => $salted_hash,
-                "salt" => $password_salt,
                 "timestamp" => date("Y-m-d H:i:s")
             ]);
-
-            // Generate UUID and send an email to confirm an account
-            self::user_send_confirmation($id);
 
             return array("status" => "success", "id" => $id);
         } catch (Exception $error) {
