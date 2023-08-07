@@ -12,12 +12,7 @@
     "autoload": {
         "psr-4": {
             "AlanTiller\\": "src/"
-        },
-        "files": [
-            "src/Authenticator.php",
-            "src/DatabaseManager.php",
-            "src/UserManager.php"
-        ]
+        }
     },
     "minimum-stability": "stable"
 }
