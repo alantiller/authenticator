@@ -1,19 +1,14 @@
 <?php
 
 /*
- * Authenticator Class
- *
- * The library adds a simple and lightweight authentication class using medoo for database connectivity
- *
- * @copyright Copyright (c) 2021 Alan Tiller <alan@slations.co.uk>
- * @license GNU
- *
+ * Authenticator (https://github.com/alantiller/authenticator)
+ * Copyright (c) Alan Tiller (https://www.alantiller.com/)
+ * Licensed under the MIT License (https://opensource.org/licenses/MIT)
  */
 
 namespace AlanTiller;
 
-use \Exception as Exception;
-
+/** Component that provides all features and utilities for secure authentication of individual users */
 final class Authenticator extends DatabaseManager {
 
     /**
