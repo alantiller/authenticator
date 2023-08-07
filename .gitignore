@@ -1,4 +1,4 @@
 /vendor/
 
-/src/src
-/src/exceptions
+/src/src/
+/src/exceptions/
