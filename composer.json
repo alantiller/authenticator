@@ -9,10 +9,19 @@
             "email": "alan.tiller@gmx.co.uk"
         }
     ],
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
     "autoload": {
         "psr-4": {
             "AlanTiller\\": "src/"
         }
     },
+    "keywords": [
+        "authentication",
+        "security",
+        "PHP"
+    ],
+    "homepage": "https://github.com/alantiller/authenticator",
     "minimum-stability": "stable"
 }

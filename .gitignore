@@ -1,4 +1,2 @@
-/vendor/
-
-/src/src/
-/src/exceptions/
+/composer.lock
+/vendor
